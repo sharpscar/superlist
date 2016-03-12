@@ -1,3 +1,6 @@
+  # -*- coding: utf-8 -*-
+
+
 from django.template.loader import render_to_string
 from django.shortcuts import render_to_response
 from django.core.urlresolvers import resolve
@@ -5,15 +8,19 @@ from django.test import TestCase
 from django.http import HttpRequest
 from lists.views import home_page
 from lists.models import Item
+import sys
+reload(sys)
+sys.setdefaultencoding('utf8')
+
 
 class ItemModelTest(TestCase):
 
     def test_saving_and_retrieving_items(self):
         first_item = Item()
-        first_item.text = '첫번째 아이템'
+        first_item.text = 'it is  a first item'
         first_item.save()
         second_item = Item()
-        second_item.text = '두번째 아이템'
+        second_item.text = 'that is a second item'
         second_item.save()
 
         saved_items = Item.objects.all()
@@ -21,8 +28,8 @@ class ItemModelTest(TestCase):
 
         first_saved_item = saved_items[0]
         second_saved_item = saved_items[1]
-        self.assertEqual(first_saved_item.text, '첫번째 아이템')
-        self.assertEqual(second_saved_item.text, '두번째 아이템')
+        self.assertEqual(first_saved_item.text, 'it is  a first item')
+        self.assertEqual(second_saved_item.text, 'that is a second item')
 
 
 class HomePageTest(TestCase):
@@ -39,15 +46,43 @@ class HomePageTest(TestCase):
         expected_html  =  render_to_string('home.html')
         self.assertEqual(response.content.decode(), expected_html)
 
-    # home_page함수가 post요청을 처리할수 있도록 테스트
+    # home_page함수가 post요청을 처리, 저장할수 있도록 테스트
     def test_home_page_can_save_a_POST_request(self):
         request = HttpRequest()
         request.method = 'POST'
         request.POST['item_text'] = '신규 작업 아이템'
+
         response = home_page(request)
-        self.assertIn('신규 작업 아이템', response.content.decode())
-        expected_html = render_to_string(
-        'home.html',
-        {'new_item_text':'신규 작업 아이템'}
-        )
-        self.assertEqual(response.content.decode(), expected_html)
+
+        self.assertEqual(Item.objects.count(),1)
+        new_item = Item.objects.first()
+        self.assertEqual(new_item.text, '신규 작업 아이템')
+
+    # 포스트 요청 처리후 리다이렉트 처리 할수 있도록 테스트
+    def test_home_page_redirects_after_POST(self):
+        request = HttpRequest()
+        request.method = 'POST'
+        request.POST['item_text'] = '신규 작업 아이템'
+
+        response = home_page(request)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['location'],'/')
+
+    #
+    def test_home_page_only_saves_items_when_necessary(self):
+        request = HttpRequest()
+        home_page(request)
+
+        self.assertEqual(Item.objects.count(),0)
+
+
+    def test_home_page_displays_all_list_items(self):
+        Item.objects.create(text='itemey 1')
+        Item.objects.create(text='itemey 2')
+
+        request = HttpRequest()
+        response = home_page(request)
+
+        self.assertIn('itemey 1', response.content.decode())
+        self.assertIn('itemey 2', response.content.decode())        
