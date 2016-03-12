@@ -1,4 +1,5 @@
 from django.template.loader import render_to_string
+from django.shortcuts import render_to_response
 from django.core.urlresolvers import resolve
 from django.test import TestCase
 from django.http import HttpRequest
@@ -19,4 +20,17 @@ class HomePageTest(TestCase):
         request = HttpRequest()
         response = home_page(request)
         expected_html  =  render_to_string('home.html')
+        self.assertEqual(response.content.decode(), expected_html)
+
+    # home_page함수가 post요청을 처리할수 있도록 테스트
+    def test_home_page_can_save_a_POST_request(self):
+        request = HttpRequest()
+        request.method = 'POST'
+        request.POST['item_text'] = '신규 작업 아이템'
+        response = home_page(request)
+        self.assertIn('신규 작업 아이템', response.content.decode())
+        expected_html = render_to_string(
+        'home.html',
+        {'new_item_text':'신규 작업 아이템'}
+        )
         self.assertEqual(response.content.decode(), expected_html)
