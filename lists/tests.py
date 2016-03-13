@@ -8,9 +8,9 @@ from django.test import TestCase
 from django.http import HttpRequest
 from lists.views import home_page
 from lists.models import Item
-import sys
-reload(sys)
-sys.setdefaultencoding('utf8')
+# import sys
+# reload(sys)
+# sys.setdefaultencoding('utf8')
 
 
 class ItemModelTest(TestCase):
@@ -85,4 +85,4 @@ class HomePageTest(TestCase):
         response = home_page(request)
 
         self.assertIn('itemey 1', response.content.decode())
-        self.assertIn('itemey 2', response.content.decode())        
+        self.assertIn('itemey 2', response.content.decode())
