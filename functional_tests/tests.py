@@ -26,7 +26,7 @@ class NewVisitorTest(LiveServerTestCase):
         # 웹 페이지 타이틀과 헤더가 ‘To-Do’를 표시하고 있다
         self.assertIn('To-Do', self.browser.title)
         header_text = self.browser.find_element_by_tag_name('h1').text
-        self.assertIn('To-Do', header_text)
+        self.assertIn('작업목록 시작', header_text)
 
         # 그녀는 바로 작업을 추가하기로 한다
         inputbox = self.browser.find_element_by_id('id_new_item')
@@ -74,7 +74,7 @@ class NewVisitorTest(LiveServerTestCase):
 
         #프란시스가 새로운 작업 아이템을 입력하기 시작한다
         #그는 에디스보다 재미가 없다
-        input = self.browser.find_element_by_id('id_new_item')
+        inputbox = self.browser.find_element_by_id('id_new_item')
         inputbox.send_keys('우유 사기')
         inputbox.send_keys(Keys.ENTER)
 

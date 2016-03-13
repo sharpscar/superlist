@@ -35,7 +35,7 @@ class ListAndItemModelsTest(TestCase):
         self.assertEqual(saved_list, list_)
 
         saved_items = Item.objects.all()
-    
+
         self.assertEqual(saved_items.count(), 2)
 
         first_saved_item = saved_items[0]
@@ -74,23 +74,73 @@ class NewListTest(TestCase):
         def test_redirect_after_POST(self):
 
             response = self.client.post('/lists/new', data={'item_text':'신규 작업 아이템'})
-            self.assertRedirects(response,'/lists/the-only-list-in-the-world/')
+            new_list  = List.objects.first()
+            self.assertRedirects(response,'/lists/%d/' % (new_list.id,))
 
 
 
 class ListViewTest(TestCase):
 
-    def test_displys_all_items(self):
+    #리스트 템플릿을 사용하도록
+    def test_uses_list_template(self):
         list_ = List.objects.create()
-        Item.objects.create(text='itemey 1', list=list_)
-        Item.objects.create(text='itemey 2', list=list_)
+        response = self.client.get('/lists/%d/' % (list_.id,))
+        #리스트 템플릿을 사용하는지 테스트
+        self.assertTemplateUsed(response, 'list.html')
 
-        response = self.client.get('/lists/the-only-list-in-the-world/')
+    #아이템에 해당하는 리스트만 표시되도록 테스트
+    def test_displays_only_items_for_that_list(self):
+        correct_list = List.objects.create()
+        Item.objects.create(text='itemey 1', list=correct_list)
+        Item.objects.create(text='itemey 2', list=correct_list)
+
+        other_list = List.objects.create()
+        Item.objects.create(text='다른목록 아이템 1', list=other_list)
+        Item.objects.create(text='다른목록 아이템 2', list=other_list)
+
+
+        response = self.client.get('/lists/%d/' % (correct_list.id,))
 
         self.assertContains(response, 'itemey 1')
         self.assertContains(response, 'itemey 2')
 
+        self.assertNotContains(response, '다른목록 아이템 1')
+        self.assertNotContains(response, '다른목록 아이템 2')
+
     # 서로 다른(리스트, 홈페이지) 템플릿을 사용하는지 테스트
     def test_uses_list_template(self):
-        response = self.client.get('/lists/the-only-list-in-the-world/')
+        list_ = List.objects.create()
+        response = self.client.get('/lists/%d/' % (list_.id,))
         self.assertTemplateUsed(response, 'list.html')
+
+    # 뷰가 템플릿에 목록을 넘기기
+    def test_passes_correct_list_to_template(self):
+        other_list = List.objects.create()
+        correct_list = List.objects.create()
+        response = self.client.get('/lists/%d/' % (correct_list.id,))
+        self.assertEqual(response.context['list'], correct_list)
+
+
+class NewItemTest(TestCase):
+    # 기존 목록에 아이템을 추가하면 저장되는지
+    def test_can_save_a_POST_request_to_an_exisint_list(self):
+        other_list = List.objects.create()
+        correct_list = List.objects.create()
+
+        self.client.post('/lists/%d/add_item' % (correct_list.id,),
+            data={'item_text': '기존 목록에 신규 아이템'}
+        )
+
+        self.assertEqual(Item.objects.count(), 1)
+        new_item = Item.objects.first()
+        self.assertEqual(new_item.text, '기존 목록에 신규 아이템')
+        self.assertEqual(new_item.list, correct_list)
+
+    def test_redirects_to_list_view(self):
+        other_list = List.objects.create()
+        correct_list = List.objects.create()
+
+        response = self.client.post('/lists/%d/add_item' % (correct_list.id,),
+            data={'item_text': '기존 목록에 신규 아이템'}
+        )
+        self.assertRedirects(response, '/lists/%d/' % (correct_list.id,))
