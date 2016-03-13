@@ -1,1 +1,1 @@
-Django==.17
+Django==1.7
