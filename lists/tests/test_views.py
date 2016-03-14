@@ -63,12 +63,7 @@ class NewListTest(TestCase):
 
 class ListViewTest(TestCase):
 
-    #리스트 템플릿을 사용하도록
-    def test_uses_list_template(self):
-        list_ = List.objects.create()
-        response = self.client.get('/lists/%d/' % (list_.id,))
-        #리스트 템플릿을 사용하는지 테스트
-        self.assertTemplateUsed(response, 'list.html')
+
 
     #아이템에 해당하는 리스트만 표시되도록 테스트
     def test_displays_only_items_for_that_list(self):
@@ -102,14 +97,12 @@ class ListViewTest(TestCase):
         response = self.client.get('/lists/%d/' % (correct_list.id,))
         self.assertEqual(response.context['list'], correct_list)
 
-
-class NewItemTest(TestCase):
     # 기존 목록에 아이템을 추가하면 저장되는지
     def test_can_save_a_POST_request_to_an_exisint_list(self):
         other_list = List.objects.create()
         correct_list = List.objects.create()
 
-        self.client.post('/lists/%d/add_item' % (correct_list.id,),
+        self.client.post('/lists/%d/' % (correct_list.id,),
             data={'item_text': '기존 목록에 신규 아이템'}
         )
 
@@ -118,11 +111,11 @@ class NewItemTest(TestCase):
         self.assertEqual(new_item.text, '기존 목록에 신규 아이템')
         self.assertEqual(new_item.list, correct_list)
 
-    def test_redirects_to_list_view(self):
+    def test_POST_redirects_to_list_view(self):
         other_list = List.objects.create()
         correct_list = List.objects.create()
 
-        response = self.client.post('/lists/%d/add_item' % (correct_list.id,),
+        response = self.client.post('/lists/%d/' % (correct_list.id,),
             data={'item_text': '기존 목록에 신규 아이템'}
         )
         self.assertRedirects(response, '/lists/%d/' % (correct_list.id,))
