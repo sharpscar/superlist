@@ -8,7 +8,7 @@ from django.test import TestCase
 from django.http import HttpRequest
 from lists.models import Item, List
 from lists.views import home_page
-
+from django.utils.html import escape
 # import sys
 # reload(sys)
 # sys.setdefaultencoding('utf8')
@@ -44,6 +44,20 @@ class NewListTest(TestCase):
             response = self.client.post('/lists/new', data={'item_text':'신규 작업 아이템'})
             new_list  = List.objects.first()
             self.assertRedirects(response,'/lists/%d/' % (new_list.id,))
+
+        # 빈 아이템을 등록할때에 1.200 코드로 응답 2. home.html을 템플릿으로 사용  3. 해당 에러메시지 발생하는지
+        def test_validation_errors_are_sent_back_to_home_page_template(self):
+            response = self.client.post('/lists/new', data={'item_text':''})
+            self.assertEqual(response.status_code, 200)
+            self.assertTemplateUsed(response, 'home.html')
+            expected_error = escape("You can't have an empty list item.")
+            self.assertContains(response, expected_error)
+
+        # 유효성 체크를 실패했는데도 객체를 생성하고 있는 문제
+        def test_invalid_list_items_arent_saved(self):
+            self.client.post('/lists/new', data={'item_text':''})
+            self.assertEqual(List.objects.count(),0)
+            self.assertEqual(Item.objects.count(),0)
 
 
 
