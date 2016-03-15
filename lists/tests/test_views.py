@@ -10,6 +10,7 @@ from lists.models import Item, List
 from lists.views import home_page
 from django.utils.html import escape
 from lists.forms import ItemForm, EMPTY_LIST_ERROR
+from unittest import skip
 # import sys
 # reload(sys)
 # sys.setdefaultencoding('utf8')
@@ -178,3 +179,18 @@ class ListViewTest(TestCase):
         response = self.post_invalid_input()
         # self.fail(response.content.decode())
         self.assertContains(response, escape(EMPTY_LIST_ERROR))
+
+    # 리스트객체와 아이템의 텍스트 내용이 중복된다.
+    #sqlite3.IntegrityError: UNIQUE constraint failed: lists_item.list_id, lists_item.text
+    @skip
+    def test_duplicate_item_validation_errors_end_up_on_lists_page(self):
+        list1 = List.objects.create()
+        item1 = Item.objects.create(list=list1, text='textey')
+        response = self.client.post(
+            '/lists/%d/' % (list1.id,),
+            data= {'text':'textey'}
+        )
+        expected_error = escape("이미 리스트에 해당 아이템이 있습니다.")
+        self.assertContains(response, expected_error)
+        self.assertTemplateUsed(response, 'list.html')
+        self.assertEqual(Item.objects.all().count, 1)
