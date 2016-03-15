@@ -9,7 +9,7 @@ from django.http import HttpRequest
 from lists.models import Item, List
 from lists.views import home_page
 from django.utils.html import escape
-from lists.forms import ItemForm
+from lists.forms import ItemForm, EMPTY_LIST_ERROR
 # import sys
 # reload(sys)
 # sys.setdefaultencoding('utf8')
@@ -43,13 +43,31 @@ class NewListTest(TestCase):
             new_list  = List.objects.first()
             self.assertRedirects(response,'/lists/%d/' % (new_list.id,))
 
-        # 빈 아이템을 등록할때에 1.200 코드로 응답 2. home.html을 템플릿으로 사용  3. 해당 에러메시지 발생하는지
-        def test_validation_errors_are_sent_back_to_home_page_template(self):
+        # # 빈 아이템을 등록할때에 1.200 코드로 응답 2. home.html을 템플릿으로 사용  3. 해당 에러메시지 발생하는지
+        # def test_validation_errors_are_sent_back_to_home_page_template(self):
+        #     response = self.client.post('/lists/new', data={'text':''})
+        #     self.assertEqual(response.status_code, 200)
+        #     self.assertTemplateUsed(response, 'home.html')
+        #     expected_error = escape("You can't have an empty list item.")
+        #     self.assertContains(response, expected_error)
+
+        # 잘못된 입력이 홈페이지 템플릿에 렌더링 되는지
+        def test_for_invalid_input_renders_home_template(self):
             response = self.client.post('/lists/new', data={'text':''})
             self.assertEqual(response.status_code, 200)
             self.assertTemplateUsed(response, 'home.html')
-            expected_error = escape("You can't have an empty list item.")
-            self.assertContains(response, expected_error)
+
+        #유효성 검증 실패가 홈페이지에 드러나는지
+        def test_validation_errors_are_show_on_home_page(self):
+            response = self.client.post('/lists/new', data={'text':''})
+            # self.fail(response.content.decode())
+            self.assertContains(response, escape(EMPTY_LIST_ERROR))
+
+        # 잘못된 폽 입력이 템플릿에 전달 되는지
+        def test_for_invalid_input_passes_form_to_template(self):
+            response = self.client.post('/lists/new', data={'text':''})
+            self.assertIsInstance(response.context['form'], ItemForm)
+
 
         # 유효성 체크를 실패했는데도 객체를 생성하고 있는 문제
         def test_invalid_list_items_arent_saved(self):
@@ -59,9 +77,8 @@ class NewListTest(TestCase):
 
 
 
+
 class ListViewTest(TestCase):
-
-
 
     #아이템에 해당하는 리스트만 표시되도록 테스트
     def test_displays_only_items_for_that_list(self):
@@ -118,11 +135,46 @@ class ListViewTest(TestCase):
         )
         self.assertRedirects(response, '/lists/%d/' % (correct_list.id,))
 
-    def test_validation_errors_end_up_on_lists_page(self):
-        list_= List.objects.create()
-        response = self.client.post('/lists/%d/' % (list_.id,), data={'text':''})
+    # def test_validation_errors_end_up_on_lists_page(self):
+    #     list_= List.objects.create()
+    #     response = self.client.post('/lists/%d/' % (list_.id,), data={'text':''})
+    #
+    #     self.assertEqual(response.status_code,200)
+    #     self.assertTemplateUsed(response, 'list.html')
+    #     expected_error = escape("You can't have an empty list item.")
+    #     self.assertContains(response, expected_error)
 
-        self.assertEqual(response.status_code,200)
+
+    def test_displays_item_form(self):
+        list_ = List.objects.create()
+        response = self.client.get('/lists/%d/' % (list_.id,))
+        self.assertIsInstance(response.context['form'], ItemForm)
+        self.assertContains(response, 'name="text"')
+
+    # 잘못된 입력
+    def post_invalid_input(self):
+        list_ = List.objects.create()
+        return self.client.post('/lists/%d/' % (list_.id,), data={'text':''})
+
+    #잘못된 입력을 보냈을때 저장하지 않도록 확인
+    def test_for_invalid_input_nothing_saved_to_db(self):
+        self.post_invalid_input()
+        self.assertEqual(Item.objects.count(),0)
+
+    # 잘못된 입력을 리스트 템플릿으로 렌더링한다.
+    def test_for_invalid_input_renders_list_template(self):
+        response = self.post_invalid_input()
+        self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'list.html')
-        expected_error = escape("You can't have an empty list item.")
-        self.assertContains(response, expected_error)
+
+    # 잘못된 입력을보냈을때 응답객체가 아이템 폼 인스턴스인지 확인
+    def test_for_invalid_input_passes_form_to_template(self):
+        response = self.post_invalid_input()
+        self.assertIsInstance(response.context['form'], ItemForm)
+
+
+    #잘못된 입력이 페이지에 에러를 표시하는지 확인
+    def test_for_invalid_input_shows_error_on_page(self):
+        response = self.post_invalid_input()
+        # self.fail(response.content.decode())
+        self.assertContains(response, escape(EMPTY_LIST_ERROR))
