@@ -4,7 +4,7 @@ from lists.forms import ItemForm
 class ItemFormTest(TestCase):
 
     # 아이템폼 렌더링 확인
-    def test_form_renders_item_text_input(self):
+    def test_form_renders_text_input(self):
         form = ItemForm()
 
         self.assertIn('placeholder="작업 아이템 입력"', form.as_p())
@@ -19,4 +19,3 @@ class ItemFormTest(TestCase):
             form.errors['text'],
             ["You can't have an empty list item."]
         )
-        

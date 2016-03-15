@@ -30,7 +30,7 @@ class HomePageTest(TestCase):
 class NewListTest(TestCase):
         # home_page함수가 post요청을 처리, 저장할수 있도록 테스트
         def test_saving_a_POST_request(self):
-            self.client.post('/lists/new', data={'item_text':'신규 작업 아이템'})
+            self.client.post('/lists/new', data={'text':'신규 작업 아이템'})
             self.assertEqual(Item.objects.count(), 1)
             new_item = Item.objects.first()
             self.assertEqual(new_item.text, '신규 작업 아이템')
@@ -39,13 +39,13 @@ class NewListTest(TestCase):
         # 포스트 요청 처리후 리다이렉트 처리 할수 있도록 테스트
         def test_redirect_after_POST(self):
 
-            response = self.client.post('/lists/new', data={'item_text':'신규 작업 아이템'})
+            response = self.client.post('/lists/new', data={'text':'신규 작업 아이템'})
             new_list  = List.objects.first()
             self.assertRedirects(response,'/lists/%d/' % (new_list.id,))
 
         # 빈 아이템을 등록할때에 1.200 코드로 응답 2. home.html을 템플릿으로 사용  3. 해당 에러메시지 발생하는지
         def test_validation_errors_are_sent_back_to_home_page_template(self):
-            response = self.client.post('/lists/new', data={'item_text':''})
+            response = self.client.post('/lists/new', data={'text':''})
             self.assertEqual(response.status_code, 200)
             self.assertTemplateUsed(response, 'home.html')
             expected_error = escape("You can't have an empty list item.")
@@ -53,7 +53,7 @@ class NewListTest(TestCase):
 
         # 유효성 체크를 실패했는데도 객체를 생성하고 있는 문제
         def test_invalid_list_items_arent_saved(self):
-            self.client.post('/lists/new', data={'item_text':''})
+            self.client.post('/lists/new', data={'text':''})
             self.assertEqual(List.objects.count(),0)
             self.assertEqual(Item.objects.count(),0)
 
@@ -101,7 +101,7 @@ class ListViewTest(TestCase):
         correct_list = List.objects.create()
 
         self.client.post('/lists/%d/' % (correct_list.id,),
-            data={'item_text': '기존 목록에 신규 아이템'}
+            data={'text': '기존 목록에 신규 아이템'}
         )
 
         self.assertEqual(Item.objects.count(), 1)
@@ -114,13 +114,13 @@ class ListViewTest(TestCase):
         correct_list = List.objects.create()
 
         response = self.client.post('/lists/%d/' % (correct_list.id,),
-            data={'item_text': '기존 목록에 신규 아이템'}
+            data={'text': '기존 목록에 신규 아이템'}
         )
         self.assertRedirects(response, '/lists/%d/' % (correct_list.id,))
 
     def test_validation_errors_end_up_on_lists_page(self):
         list_= List.objects.create()
-        response = self.client.post('/lists/%d/' % (list_.id,), data={'item_text':''})
+        response = self.client.post('/lists/%d/' % (list_.id,), data={'text':''})
 
         self.assertEqual(response.status_code,200)
         self.assertTemplateUsed(response, 'list.html')
