@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>QUnit Example</title>
+  <link rel="stylesheet" href="qunit.css">
+</head>
+<body>
+  <div id="qunit"></div>
+  <div id="qunit-fixture">
+    <form action="">
+      <input name="text">
+      <div class="has-error">
+        에러 텍스트
+      </div>
+    </form>
+  </div>
+
+
+  <script src="http://code.jquery.com/jquery.min.js"></script>
+  <script src="qunit.js"></script>
+  <script src="../list.js"></script>
+
+  <script type="text/javascript">
+    test("키 입력 시에 에러가 숨겨져야 한다", function(){
+      $('input').trigger('keypress');
+      equal($('.has-error').is(':visible'), false);
+    });
+
+    test("키 입력이 없으면 에러가 숨겨지지 않는다", function(){
+      equal($('.has-error').is(':visible'), true);
+    });
+
+    test("입력요소 내부를 클릭할때에 에러메시지가 숨겨져야한다", function(){
+      $('#id_text').trigger('focus');
+      equal($('.has-error').is(':visible'), false);
+    })
+
+
+  </script>
+</body>
+</html>

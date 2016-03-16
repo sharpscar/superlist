@@ -11,6 +11,8 @@ from lists.views import home_page
 from django.utils.html import escape
 from lists.forms import ItemForm, EMPTY_LIST_ERROR
 from unittest import skip
+from lists.forms import (DUPLICATE_ITEM_ERROR, EMPTY_LIST_ERROR, ExistingListItemForm, ItemForm)
+
 # import sys
 # reload(sys)
 # sys.setdefaultencoding('utf8')
@@ -149,7 +151,7 @@ class ListViewTest(TestCase):
     def test_displays_item_form(self):
         list_ = List.objects.create()
         response = self.client.get('/lists/%d/' % (list_.id,))
-        self.assertIsInstance(response.context['form'], ItemForm)
+        self.assertIsInstance(response.context['form'], ExistingListItemForm)
         self.assertContains(response, 'name="text"')
 
     # 잘못된 입력
@@ -171,7 +173,7 @@ class ListViewTest(TestCase):
     # 잘못된 입력을보냈을때 응답객체가 아이템 폼 인스턴스인지 확인
     def test_for_invalid_input_passes_form_to_template(self):
         response = self.post_invalid_input()
-        self.assertIsInstance(response.context['form'], ItemForm)
+        self.assertIsInstance(response.context['form'], ExistingListItemForm)
 
 
     #잘못된 입력이 페이지에 에러를 표시하는지 확인
@@ -182,7 +184,7 @@ class ListViewTest(TestCase):
 
     # 리스트객체와 아이템의 텍스트 내용이 중복된다.
     #sqlite3.IntegrityError: UNIQUE constraint failed: lists_item.list_id, lists_item.text
-    @skip
+
     def test_duplicate_item_validation_errors_end_up_on_lists_page(self):
         list1 = List.objects.create()
         item1 = Item.objects.create(list=list1, text='textey')
@@ -190,7 +192,7 @@ class ListViewTest(TestCase):
             '/lists/%d/' % (list1.id,),
             data= {'text':'textey'}
         )
-        expected_error = escape("이미 리스트에 해당 아이템이 있습니다.")
+        expected_error = escape(DUPLICATE_ITEM_ERROR)
         self.assertContains(response, expected_error)
-        self.assertTemplateUsed(response, 'list.html')
-        self.assertEqual(Item.objects.all().count, 1)
+        self.assertTemplateUsed(response, 'list.html')        
+        self.assertEqual(Item.objects.all().count(), 1)
